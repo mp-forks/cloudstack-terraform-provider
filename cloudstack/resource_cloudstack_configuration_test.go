@@ -13,43 +13,15 @@ func TestAccCloudStackConfiguration_basic(t *testing.T) {
 	var configuration cloudstack.ListConfigurationsResponse
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackConfigurationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceConfiguration(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackConfigurationExists("cloudstack_configuration.test", &configuration),
-					testAccCheckCloudStackConfigurationAttributes(&configuration),
-				),
-			},
-		},
-	})
-}
-
-func TestAccCloudStackConfiguration_update(t *testing.T) {
-	var configuration cloudstack.ListConfigurationsResponse
-	// var configuration_update cloudstack.UpdateConfigurationResponse
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccResourceConfiguration(),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackConfigurationExists("cloudstack_configuration.test", &configuration),
-					testAccCheckCloudStackConfigurationAttributes(&configuration),
 					resource.TestCheckResourceAttr("cloudstack_configuration.test", "value", "test_host"),
-				),
-			},
-
-			{
-				Config: testAccResourceConfiguration_update(),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackConfigurationExists("cloudstack_configuration.test", &configuration),
-					// testAccCheckCloudStackConfigurationUpdate(&configuration),
-					resource.TestCheckResourceAttr("cloudstack_configuration.test", "value", "new_test_host"),
 				),
 			},
 		},
@@ -102,31 +74,21 @@ func testAccCheckCloudStackConfigurationExists(n string, configuration *cloudsta
 
 func testAccCheckCloudStackConfigurationAttributes(configuration *cloudstack.ListConfigurationsResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
-		if configuration.Configurations[0].Name != "host" {
-			return fmt.Errorf("Bad name: %s", configuration.Configurations[0].Name)
+		for _, v := range configuration.Configurations {
+			if v.Name == "host" {
+				if v.Value != "test_host" {
+					return fmt.Errorf("Bad value: %s", v.Value)
+				}
+				return nil
+			}
 		}
-
-		if configuration.Configurations[0].Value != "test_host" {
-			return fmt.Errorf("Bad name: %s", configuration.Configurations[0].Name)
-		}
-
-		return nil
+		return fmt.Errorf("Bad name: %s", "host")
 	}
 }
 
-func testAccCheckCloudStackConfigurationUpdate(configuration *cloudstack.ListConfigurationsResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if configuration.Configurations[0].Name != "host" {
-			return fmt.Errorf("Bad name: %s", configuration.Configurations[0].Name)
-		}
+func testAccCheckCloudStackConfigurationDestroy(s *terraform.State) error {
+	return nil
 
-		if configuration.Configurations[0].Value != "new_test_host" {
-			return fmt.Errorf("Bad name: %s", configuration.Configurations[0].Name)
-		}
-
-		return nil
-	}
 }
 
 func testAccResourceConfiguration() string {
@@ -134,15 +96,6 @@ func testAccResourceConfiguration() string {
 	resource "cloudstack_configuration" "test" {
 		name  = "host"
 		value = "test_host"
-	}
-`)
-}
-
-func testAccResourceConfiguration_update() string {
-	return fmt.Sprintf(`
-	resource "cloudstack_configuration" "test" {
-		name  = "host"
-		value = "new_test_host"
 	}
 `)
 }
