@@ -7,7 +7,7 @@ Requirements
 -	[Terraform](https://www.terraform.io/downloads.html) 1.0.x
 -	[Go](https://golang.org/doc/install) 1.16+ (to build the provider plugin)
 
-Using the Provider from Terrafrom registry
+Using the Provider from Terraform registry
 ------------------------------------------
 To install the CloudStack provider, copy and paste the below code into your Terraform configuration. Then, run terraform init.
 ```sh
@@ -48,9 +48,14 @@ $ make build
 $ ls $GOPATH/bin/terraform-provider-cloudstack
 ```
 Once the build is ready, you have to copy the binary into Terraform locally (version appended).
-On Linux this path is at ~/.terraform.d/plugins, and on Windows at %APPDATA%\terraform.d\plugins.
+
+On Linux and Mac this path is at ~/.terraform.d/plugins,
+On Windows at %APPDATA%\terraform.d\plugins,
+
 ```sh
-$ ls ~/.terraform.d/plugins/registry.terraform.io/cloudstack/cloudstack/0.4.0/linux_amd64/terraform-provider-cloudstack_v0.4.0
+$  cd ~
+$  mkdir -p ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
+$  cp $GOPATH/bin/terraform-provider-cloudstack ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
 ```
 
 Testing the Provider
@@ -65,8 +70,17 @@ $ make test
 In order to run the full suite of Acceptance tests you will need to run the CloudStack Simulator. Please follow these steps to prepare an environment for running the Acceptance tests:
 
 ```sh
-$ docker pull cloudstack/simulator
-$ docker run --name simulator -p 8080:5050 -d cloudstack/simulator
+docker pull apache/cloudstack-simulator
+
+or pull it with a particular build tag
+
+docker pull apache/cloudstack-simulator:4.17.2.0
+
+docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator
+
+or 
+
+docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.17.2.0
 ```
 
 When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
@@ -85,14 +99,14 @@ $ export CLOUDSTACK_API_KEY=r_gszj7e0ttr_C6CP5QU_1IV82EIOtK4o_K9i_AltVztfO68wpXi
 $ export CLOUDSTACK_SECRET_KEY=tsfMDShFe94f4JkJfEh6_tZZ--w5jqEW7vGL2tkZGQgcdbnxNoq9fRmwAtU5MEGGXOrDlNA6tfvGK14fk_MB6w
 ```
 
-In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`. When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply runnning:
+In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`. When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply running:
 
 ```sh
 $ make testacc
 ```
 
-Sample Terraform configuration
-------------------------------
+Sample Terraform configuration when testing locally
+------------------------------------------------------------
 Below is an example configuration to initialize provider and create a Virtual Machine instance
 
 ```sh
@@ -100,7 +114,7 @@ $ cat provider.tf
 terraform {
   required_providers {
     cloudstack = {
-      source = "cloudstack/cloudstack"
+      source = "localdomain/provider/cloudstack"
       version = "0.4.0"
     }
   }
