@@ -144,11 +144,6 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
-			"hostid": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
 			"start_vm": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -171,16 +166,6 @@ func resourceCloudStackInstance() *schema.Resource {
 			},
 
 			"details": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
-
-			"properties": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
-
-			"nicnetworklist": {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
@@ -233,27 +218,6 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		p.SetDetails(vmDetails)
 	}
-
-	// Set VM Properties
-	vmProperties := make(map[string]string)
-	if properties, ok := d.GetOk("properties"); ok {
-		for k, v := range properties.(map[string]interface{}) {
-			vmProperties[k] = v.(string)
-		}
-		p.SetProperties(vmProperties)
-	}
-
-	// SetNicNetworkList
-	if nicnetworklist, ok := d.GetOk("nicnetworklist"); ok {
-		nicNetworkDetails := []map[string]string{
-			{
-				"nic":     nicnetworklist.(map[string]interface{})["nic"].(string),
-				"network": nicnetworklist.(map[string]interface{})["network"].(string),
-			},
-		}
-		p.SetNicnetworklist(nicNetworkDetails)
-	}
-
 	// Set the name
 	name, hasName := d.GetOk("name")
 	if hasName {
@@ -333,12 +297,6 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetKeypair(keypair.(string))
 	}
 
-	// If a hostid is supplied, add it to the parameter struct
-
-	if hostid, ok := d.GetOk("hostid"); ok {
-		p.SetHostid(hostid.(string))
-	}
-
 	if userData, ok := d.GetOk("user_data"); ok {
 		ud, err := getUserData(userData.(string), cs.HTTPGETOnly)
 		if err != nil {
@@ -392,7 +350,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("display_name", vm.Displayname)
 	d.Set("group", vm.Group)
 
-	// In some rare cases (when destroying a machine fails) it can happen that
+	// In some rare cases (when destroying a machine failes) it can happen that
 	// an instance does not have any attached NIC anymore.
 	if len(vm.Nic) > 0 {
 		d.Set("network_id", vm.Nic[0].Networkid)
@@ -717,7 +675,7 @@ func getUserData(userData string, httpGetOnly bool) (string, error) {
 	if len(ud) > maxUD {
 		return "", fmt.Errorf(
 			"The supplied user_data contains %d bytes after encoding, "+
-				"this exceeds the limit of %d bytes", len(ud), maxUD)
+				"this exeeds the limit of %d bytes", len(ud), maxUD)
 	}
 
 	return ud, nil
