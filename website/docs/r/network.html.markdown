@@ -78,7 +78,6 @@ The following attributes are exported:
 * `id` - The ID of the network.
 * `display_text` - The display text of the network.
 * `network_domain` - DNS domain for the network.
-* `source_nat_ip_address` - The associated source NAT IP.
 * `source_nat_ip_id` - The ID of the associated source NAT IP.
 
 ## Import
