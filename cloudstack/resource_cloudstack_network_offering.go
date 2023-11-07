@@ -57,12 +57,12 @@ func resourceCloudStackNetworkOffering() *schema.Resource {
 func resourceCloudStackNetworkOfferingCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	name := d.Get("name").(string)
-	display_text := d.Get("display_text").(string)
+	// display_text := d.Get("display_text").(string)
 	guest_ip_type := d.Get("guest_ip_type").(string)
 	traffic_type := d.Get("traffic_type").(string)
 
 	// Create a new parameter struct
-	p := cs.NetworkOffering.NewCreateNetworkOfferingParams(display_text, guest_ip_type, name, traffic_type)
+	p := cs.NetworkOffering.NewCreateNetworkOfferingParams(guest_ip_type, name, traffic_type)
 
 	if guest_ip_type == "Shared" {
 		p.SetSpecifyvlan(true)

@@ -49,10 +49,10 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	name := d.Get("name").(string)
-	display_text := d.Get("display_text").(string)
+	// display_text := d.Get("display_text").(string)
 
 	// Create a new parameter struct
-	p := cs.ServiceOffering.NewCreateServiceOfferingParams(display_text, name)
+	p := cs.ServiceOffering.NewCreateServiceOfferingParams(name)
 
 	log.Printf("[DEBUG] Creating Service Offering %s", name)
 	s, err := cs.ServiceOffering.CreateServiceOffering(p)

@@ -32,6 +32,9 @@ func resourceCloudStackTrafficType() *schema.Resource {
 		Read:   resourceCloudStackTrafficTypeRead,
 		// Update: resourceCloudStackTrafficTypeUpdate,
 		Delete: resourceCloudStackTrafficTypeDelete,
+		Importer: &schema.ResourceImporter{
+			State: importStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"hyperv_network_label": {
 				Type:     schema.TypeString,

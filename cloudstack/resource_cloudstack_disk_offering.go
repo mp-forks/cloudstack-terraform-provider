@@ -52,11 +52,11 @@ func resourceCloudStackDiskOffering() *schema.Resource {
 func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	name := d.Get("name").(string)
-	display_text := d.Get("display_text").(string)
+	// display_text := d.Get("display_text").(string)
 	disk_size := d.Get("disk_size").(int)
 
 	// Create a new parameter struct
-	p := cs.DiskOffering.NewCreateDiskOfferingParams(name, display_text)
+	p := cs.DiskOffering.NewCreateDiskOfferingParams(name)
 	p.SetDisksize(int64(disk_size))
 
 	log.Printf("[DEBUG] Creating Disk Offering %s", name)

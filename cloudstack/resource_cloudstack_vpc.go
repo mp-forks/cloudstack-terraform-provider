@@ -110,15 +110,14 @@ func resourceCloudStackVPCCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	// Set the display text
-	displaytext, ok := d.GetOk("display_text")
-	if !ok {
-		displaytext = name
-	}
+	// displaytext, ok := d.GetOk("display_text")
+	// if !ok {
+	// 	displaytext = name
+	// }
 
 	// Create a new parameter struct
 	p := cs.VPC.NewCreateVPCParams(
 		d.Get("cidr").(string),
-		displaytext.(string),
 		name,
 		vpcofferingid,
 		zoneid,

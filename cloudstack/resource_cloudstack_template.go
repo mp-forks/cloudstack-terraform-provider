@@ -141,14 +141,13 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 	name := d.Get("name").(string)
 
 	// Compute/set the display text
-	displaytext := d.Get("display_text").(string)
-	if displaytext == "" {
-		displaytext = name
-	}
+	// displaytext := d.Get("display_text").(string)
+	// if displaytext == "" {
+	// 	displaytext = name
+	// }
 
 	// Create a new parameter struct
 	p := cs.Template.NewRegisterTemplateParams(
-		displaytext,
 		d.Get("format").(string),
 		d.Get("hypervisor").(string),
 		name,

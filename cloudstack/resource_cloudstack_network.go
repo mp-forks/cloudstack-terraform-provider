@@ -177,13 +177,13 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// Compute/set the display text
-	displaytext, ok := d.GetOk("display_text")
-	if !ok {
-		displaytext = name
-	}
+	// displaytext, ok := d.GetOk("display_text")
+	// if !ok {
+	// 	displaytext = name
+	// }
 
 	// Create a new parameter struct
-	p := cs.Network.NewCreateNetworkParams(displaytext.(string), name, networkofferingid, zoneid)
+	p := cs.Network.NewCreateNetworkParams(name, networkofferingid, zoneid)
 
 	// Get the network offering to check if it supports specifying IP ranges
 	no, _, err := cs.NetworkOffering.GetNetworkOfferingByID(networkofferingid)
