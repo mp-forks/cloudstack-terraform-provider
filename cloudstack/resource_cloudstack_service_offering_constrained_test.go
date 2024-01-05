@@ -36,6 +36,14 @@ func TestAccServiceOfferingConstrained(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.constrained1", "name", "constrained1"),
 				),
 			},
+			// Sets zone id to all
+			// This needs a zone data resource to return the id.  Currently it returns the name as the id.
+			// {
+			// 	Config: testAccServiceOfferingCustomConstrained1ZoneAll,
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.constrained1", "name", "constrained1"),
+			// 	),
+			// },
 			{
 				Config: testAccServiceOfferingCustomConstrained2,
 				Check: resource.ComposeTestCheckFunc(
@@ -85,6 +93,7 @@ resource "cloudstack_service_offering_constrained" "constrained1" {
 	min_memory     = 1024
 	
 	// other
+	tags      = "foo"
 	host_tags = "test0101,test0202"
 	network_rate = 1024
 	deployment_planner = "UserDispersingPlanner"
@@ -94,6 +103,38 @@ resource "cloudstack_service_offering_constrained" "constrained1" {
 	is_volatile             = false
 	limit_cpu_use           = false
 	offer_ha                = false
+	// zone_id = ["3c4d4404-20d7-453a-a84d-e381074315c7"]
+
+}
+`
+
+const testAccServiceOfferingCustomConstrained1ZoneAll = `
+resource "cloudstack_service_offering_constrained" "constrained1" {
+	display_text = "constrained11"
+	name         = "constrained1"
+
+	// compute
+	cpu_speed  = 2500
+	max_cpu_number = 10
+	min_cpu_number = 2
+
+	// memory
+	max_memory     = 4096
+	min_memory     = 1024
+
+	// other
+	tags      = "foo1"
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	// Feature flags
+	dynamic_scaling_enabled = false
+	is_volatile             = false
+	limit_cpu_use           = false
+	offer_ha                = false
+
+	zone_id = []
 }
 `
 

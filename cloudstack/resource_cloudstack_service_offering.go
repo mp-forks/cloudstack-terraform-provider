@@ -22,6 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -77,13 +78,13 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("offer_ha", s.Offerha)
 	d.Set("provisioning_type", s.Provisioningtype)
 	d.Set("root_disk_size", s.Rootdisksize)
-	// duplicate values
-	// d.Set("service_offering_details", s.Serviceofferingdetails)
 	d.Set("storage_policy", s.Vspherestoragepolicy)
 	d.Set("storage_type", s.Storagetype)
 	d.Set("system_vm_type", s.Systemvmtype)
 	d.Set("tags", s.Storagetags)
-	d.Set("zone_id", s.Zoneid)
+	if len(s.Zoneid) > 0 {
+		d.Set("zone_id", strings.Split(s.Zoneid, ","))
+	}
 
 	return nil
 }
@@ -104,11 +105,20 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("name"); ok {
 		p.SetName(v.(string))
 	}
-	if v, ok := d.GetOk("storage_tags"); ok {
+	if v, ok := d.GetOk("tags"); ok {
 		p.SetStoragetags(v.(string))
 	}
+
 	if v, ok := d.GetOk("zone_id"); ok {
-		p.SetZoneid(v.(string))
+		zone_id := v.(*schema.Set).List()
+		items := make([]string, len(zone_id))
+		for i, raw := range zone_id {
+			items[i] = raw.(string)
+		}
+		p.SetZoneid(strings.Join(items, ","))
+	} else {
+		// Special parameter not documented in spec.
+		p.SetZoneid("all")
 	}
 
 	_, err := cs.ServiceOffering.UpdateServiceOffering(p)
@@ -191,8 +201,12 @@ func serviceOfferingMergeCommonSchema(s1 map[string]*schema.Schema) map[string]*
 			Optional: true,
 			ForceNew: true,
 		},
+		"tags": {
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 		"zone_id": {
-			Type:     schema.TypeList,
+			Type:     schema.TypeSet,
 			Optional: true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -225,6 +239,9 @@ func serviceOfferingCreateParams(p *cloudstack.CreateServiceOfferingParams, d *s
 	if v, ok := d.GetOk("disk_offering_id"); ok {
 		p.SetDiskofferingid(v.(string))
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		p.SetTags(v.(string))
+	}
 
 	// Features flags
 	p.SetDynamicscalingenabled(d.Get("dynamic_scaling_enabled").(bool))
@@ -243,7 +260,7 @@ func serviceOfferingCreateParams(p *cloudstack.CreateServiceOfferingParams, d *s
 	}
 
 	if v, ok := d.GetOk("zone_id"); ok {
-		zone_id := v.([]interface{})
+		zone_id := v.(*schema.Set).List()
 		items := make([]string, len(zone_id))
 		for i, raw := range zone_id {
 			items[i] = raw.(string)
@@ -267,9 +284,6 @@ func serviceOfferingCreateParams(p *cloudstack.CreateServiceOfferingParams, d *s
 		if v2, ok2 := offering["root_disk_size"]; ok2 {
 			tmp, _ := strconv.Atoi(v2.(string))
 			p.SetRootdisksize(int64(tmp))
-		}
-		if v2, ok2 := offering["tags"]; ok2 {
-			p.SetTags(v2.(string))
 		}
 		if v2, ok2 := offering["disk_offering_strictness"]; ok2 {
 			tmp, _ := strconv.ParseBool(v2.(string))
@@ -404,11 +418,6 @@ func serviceOfferingDisk() *schema.Schema {
 					Type:     schema.TypeInt,
 					Optional: true,
 					Computed: true,
-					ForceNew: true,
-				},
-				"tags": {
-					Type:     schema.TypeString,
-					Optional: true,
 					ForceNew: true,
 				},
 				"storage_type": {

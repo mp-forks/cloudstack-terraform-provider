@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -97,7 +98,6 @@ func resourceCloudStackDiskOffering() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeList,
@@ -386,7 +386,7 @@ func resourceCloudStackDiskOfferingUpdate(d *schema.ResourceData, meta interface
 		p.SetTags(v.(string))
 	}
 	if v, ok := d.GetOk("zone_id"); ok {
-		p.SetZoneid(v.(string))
+		p.SetZoneid(fmt.Sprintf("%v", v))
 	}
 
 	// hypervisor qos
