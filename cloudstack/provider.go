@@ -124,7 +124,6 @@ func New() *schema.Provider {
 			"cloudstack_disk_offering":                  resourceCloudStackDiskOffering(),
 			"cloudstack_volume":                         resourceCloudStackVolume(),
 			"cloudstack_zone":                           resourceCloudStackZone(),
-			"cloudstack_service_offering":               resourceCloudStackServiceOffering(),
 			"cloudstack_service_offering_fixed":         resourceCloudStackServiceOfferingFixed(),
 			"cloudstack_service_offering_constrained":   resourceCloudStackServiceOfferingConstrained(),
 			"cloudstack_service_offering_unconstrained": resourceCloudStackServiceOfferingUnConstrained(),
