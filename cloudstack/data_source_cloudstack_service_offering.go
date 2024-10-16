@@ -20,119 +20,246 @@
 package cloudstack
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
-	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceCloudstackServiceOffering() *schema.Resource {
+func resourceCloudStackServiceOffering() *schema.Resource {
 	return &schema.Resource{
-		Read: datasourceCloudStackServiceOfferingRead,
+		Create: resourceCloudStackServiceOfferingCreate,
+		Read:   resourceCloudStackServiceOfferingRead,
+		Update: resourceCloudStackServiceOfferingUpdate,
+		Delete: resourceCloudStackServiceOfferingDelete,
 		Schema: map[string]*schema.Schema{
-			"filter": dataSourceFiltersSchema(),
-
-			//Computed values
 			"name": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Required: true,
 			},
 			"display_text": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Required: true,
+			},
+			"cpu_number": {
+				Description: "Number of CPU cores",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"cpu_speed": {
+				Description: "Speed of CPU in Mhz",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"host_tags": {
+				Description: "The host tag for this service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"limit_cpu_use": {
+				Description: "Restrict the CPU usage to committed service offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     false,
+			},
+			"memory": {
+				Description: "The total memory of the service offering in MB",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"offer_ha": {
+				Description: "The HA for the service offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     false,
+			},
+			"storage_type": {
+				Description: "The storage type of the service offering. Values are local and shared",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     "shared",
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+
+					if v == "local" || v == "shared" {
+						return
+					}
+
+					errs = append(errs, fmt.Errorf("storage type should be either local or shared, got %s", v))
+
+					return
+				},
 			},
 		},
 	}
 }
 
-func datasourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interface{}) error {
+func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	p := cs.ServiceOffering.NewListServiceOfferingsParams()
-	csServiceOfferings, err := cs.ServiceOffering.ListServiceOfferings(p)
+	name := d.Get("name").(string)
+	display_text := d.Get("display_text").(string)
 
-	if err != nil {
-		return fmt.Errorf("Failed to list service offerings: %s", err)
+	// Create a new parameter struct
+	p := cs.ServiceOffering.NewCreateServiceOfferingParams(display_text, name)
+	if v, ok := d.GetOk("cpu_number"); ok {
+		p.SetCpunumber(v.(int))
 	}
 
-	filters := d.Get("filter")
-	var serviceOfferings []*cloudstack.ServiceOffering
-
-	for _, s := range csServiceOfferings.ServiceOfferings {
-		match, err := applyServiceOfferingFilters(s, filters.(*schema.Set))
-		if err != nil {
-			return err
-		}
-		if match {
-			serviceOfferings = append(serviceOfferings, s)
-		}
+	if v, ok := d.GetOk("cpu_speed"); ok {
+		p.SetCpuspeed(v.(int))
 	}
 
-	if len(serviceOfferings) == 0 {
-		return fmt.Errorf("No service offering is matching with the specified regex")
+	if v, ok := d.GetOk("host_tags"); ok {
+		p.SetHosttags(v.(string))
 	}
-	//return the latest service offering from the list of filtered service according
-	//to its creation date
-	serviceOffering, err := latestServiceOffering(serviceOfferings)
+
+	if v, ok := d.GetOk("limit_cpu_use"); ok {
+		p.SetLimitcpuuse(v.(bool))
+	}
+
+	if v, ok := d.GetOk("memory"); ok {
+		p.SetMemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("offer_ha"); ok {
+		p.SetOfferha(v.(bool))
+	}
+
+	if v, ok := d.GetOk("storage_type"); ok {
+		p.SetStoragetype(v.(string))
+	}
+
+	log.Printf("[DEBUG] Creating Service Offering %s", name)
+	s, err := cs.ServiceOffering.CreateServiceOffering(p)
+
 	if err != nil {
 		return err
 	}
-	log.Printf("[DEBUG] Selected service offerings: %s\n", serviceOffering.Displaytext)
 
-	return serviceOfferingDescriptionAttributes(d, serviceOffering)
+	log.Printf("[DEBUG] Service Offering %s successfully created", name)
+	d.SetId(s.Id)
+
+	return resourceCloudStackServiceOfferingRead(d, meta)
 }
 
-func serviceOfferingDescriptionAttributes(d *schema.ResourceData, serviceOffering *cloudstack.ServiceOffering) error {
-	d.SetId(serviceOffering.Id)
-	d.Set("name", serviceOffering.Name)
-	d.Set("display_text", serviceOffering.Displaytext)
+func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+	log.Printf("[DEBUG] Retrieving Service Offering %s", d.Get("name").(string))
+
+	// Get the Service Offering details
+	s, count, err := cs.ServiceOffering.GetServiceOfferingByName(d.Get("name").(string))
+
+	if err != nil {
+		if count == 0 {
+			log.Printf("[DEBUG] Service Offering %s does no longer exist", d.Get("name").(string))
+			d.SetId("")
+			return nil
+		}
+		return err
+	}
+
+	d.SetId(s.Id)
+
+	fields := map[string]interface{}{
+		"name":          s.Name,
+		"display_text":  s.Displaytext,
+		"cpu_number":    s.Cpunumber,
+		"cpu_speed":     s.Cpuspeed,
+		"host_tags":     s.Hosttags,
+		"limit_cpu_use": s.Limitcpuuse,
+		"memory":        s.Memory,
+		"offer_ha":      s.Offerha,
+		"storage_type":  s.Storagetype,
+	}
+
+	for k, v := range fields {
+		d.Set(k, v)
+	}
 
 	return nil
 }
 
-func latestServiceOffering(serviceOfferings []*cloudstack.ServiceOffering) (*cloudstack.ServiceOffering, error) {
-	var latest time.Time
-	var serviceOffering *cloudstack.ServiceOffering
+func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
 
-	for _, s := range serviceOfferings {
-		created, err := time.Parse("2006-01-02T15:04:05-0700", s.Created)
+	name := d.Get("name").(string)
+
+	// Check if the name is changed and if so, update the service offering
+	if d.HasChange("name") {
+		log.Printf("[DEBUG] Name changed for %s, starting update", name)
+
+		// Create a new parameter struct
+		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
+
+		// Set the new name
+		p.SetName(d.Get("name").(string))
+
+		// Update the name
+		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse creation date of an service offering: %s", err)
+			return fmt.Errorf(
+				"Error updating the name for service offering %s: %s", name, err)
 		}
 
-		if created.After(latest) {
-			latest = created
-			serviceOffering = s
-		}
 	}
 
-	return serviceOffering, nil
+	// Check if the display text is changed and if so, update seervice offering
+	if d.HasChange("display_text") {
+		log.Printf("[DEBUG] Display text changed for %s, starting update", name)
+
+		// Create a new parameter struct
+		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
+
+		// Set the new display text
+		p.SetName(d.Get("display_text").(string))
+
+		// Update the display text
+		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the display text for service offering %s: %s", name, err)
+		}
+
+	}
+
+	if d.HasChange("host_tags") {
+		log.Printf("[DEBUG] Host tags changed for %s, starting update", name)
+
+		// Create a new parameter struct
+		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
+
+		// Set the new host tags
+		p.SetHosttags(d.Get("host_tags").(string))
+
+		// Update the host tags
+		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the host tags for service offering %s: %s", name, err)
+		}
+
+	}
+
+	return resourceCloudStackServiceOfferingRead(d, meta)
 }
 
-func applyServiceOfferingFilters(serviceOffering *cloudstack.ServiceOffering, filters *schema.Set) (bool, error) {
-	var serviceOfferingJSON map[string]interface{}
-	k, _ := json.Marshal(serviceOffering)
-	err := json.Unmarshal(k, &serviceOfferingJSON)
+func resourceCloudStackServiceOfferingDelete(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Create a new parameter struct
+	p := cs.ServiceOffering.NewDeleteServiceOfferingParams(d.Id())
+	_, err := cs.ServiceOffering.DeleteServiceOffering(p)
+
 	if err != nil {
-		return false, err
+		return fmt.Errorf("Error deleting Service Offering: %s", err)
 	}
 
-	for _, f := range filters.List() {
-		m := f.(map[string]interface{})
-		r, err := regexp.Compile(m["value"].(string))
-		if err != nil {
-			return false, fmt.Errorf("Invalid regex: %s", err)
-		}
-		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		serviceOfferingField := serviceOfferingJSON[updatedName].(string)
-		if !r.MatchString(serviceOfferingField) {
-			return false, nil
-		}
-
-	}
-	return true, nil
+	return nil
 }
