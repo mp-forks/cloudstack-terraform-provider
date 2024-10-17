@@ -9,40 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type foo struct {
-	// DiskBytesReadRate types.String `tfsdk:"bytes_read_rate"`
-}
-
-// orderResourceModel maps the resource schema data.
-type serviceOfferingResourceModel struct {
-	foo
-	// DiskBytesReadRate types.String `tfsdk:"bytes_read_rate"`
-	// DiskBytesReadRateMax        types.String `tfsdk:"bytes_read_rate_max"`
-	// DiskBytesReadRateMaxLength  types.String `tfsdk:"bytes_read_rate_max_length"`
-	// DiskBytesWriteRate          types.String `tfsdk:"bytes_write_rate"`
-	// DiskBytesWriteRateMax       types.String `tfsdk:"bytes_write_rate_max"`
-	// DiskBytesWriteRateMaxLength types.String `tfsdk:"bytes_write_rate_max_length"`
-	// CacheMode                   types.String `tfsdk:"cache_mode"`
-	// Cpunumber                   types.String `tfsdk:"cpu_number"`
-	// Cpuspeed                    types.String `tfsdk:"cpu_speed"`
-	// customized                  types.String `tfsdk:"Iscustomized"`
-	// types.String `tfsdk:"changeme"`
-	DeploymentPlanner     types.String `tfsdk:"deployment_planner"`
-	DiskOfferingId        types.String `tfsdk:"disk_offering_id"`
-	DisplayText           types.String `tfsdk:"display_text"`
-	DomainIds             types.Set    `tfsdk:"domain_ids"`
-	DynamicScalingEnabled types.Bool   `tfsdk:"dynamic_scaling_enabled"`
-	HostTags              types.String `tfsdk:"host_tags"`
-	ID                    types.String `tfsdk:"id"`
-	IsVolatile            types.Bool   `tfsdk:"is_volatile"`
-	LimitCpuUse           types.Bool   `tfsdk:"limit_cpu_use"`
-	Name                  types.String `tfsdk:"name"`
-	NetworkRate           types.Int64  `tfsdk:"network_rate"`
-	OfferHa               types.Bool   `tfsdk:"offer_ha"`
-	StorageTags           types.String `tfsdk:"storage_tags"`
-	ZoneIds               types.Set    `tfsdk:"zone_ids"`
-}
-
 func createServiceOffering(_ context.Context, client *cloudstack.CloudStackClient, plan serviceOfferingResourceModel) (serviceOfferingResourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
