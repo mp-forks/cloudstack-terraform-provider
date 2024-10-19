@@ -149,6 +149,8 @@ func (p *CloudstackProvider) ConfigValidators(ctx context.Context) []provider.Co
 func (p *CloudstackProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewserviceOfferingUnconstrainedResource,
+		NewserviceOfferingConstrainedResource,
+		NewserviceOfferingFixedResource,
 	}
 }
 

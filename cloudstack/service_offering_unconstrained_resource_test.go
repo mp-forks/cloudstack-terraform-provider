@@ -1,21 +1,21 @@
-//
-// Licensed to the Apache Software Foundation (ASF) under one
-// or more contributor license agreements.  See the NOTICE file
-// distributed with this work for additional information
-// regarding copyright ownership.  The ASF licenses this file
-// to you under the Apache License, Version 2.0 (the
-// "License"); you may not use this file except in compliance
-// with the License.  You may obtain a copy of the License at
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
-//
+// //
+// // Licensed to the Apache Software Foundation (ASF) under one
+// // or more contributor license agreements.  See the NOTICE file
+// // distributed with this work for additional information
+// // regarding copyright ownership.  The ASF licenses this file
+// // to you under the Apache License, Version 2.0 (the
+// // "License"); you may not use this file except in compliance
+// // with the License.  You may obtain a copy of the License at
+// //
+// //   http://www.apache.org/licenses/LICENSE-2.0
+// //
+// // Unless required by applicable law or agreed to in writing,
+// // software distributed under the License is distributed on an
+// // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// // KIND, either express or implied.  See the License for the
+// // specific language governing permissions and limitations
+// // under the License.
+// //
 
 package cloudstack
 
@@ -25,57 +25,183 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccCloudStackServiceOfferingUnconstrained_basic(t *testing.T) {
-	// var so cloudstack.ServiceOffering
+func TestAccServiceOfferingUnconstrained(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccMuxProvider,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudStackServiceOfferingUnconstrained_basic,
-				Check:  resource.ComposeTestCheckFunc(
-				// testAccCheckCloudStackServiceOfferingExists("cloudstack_service_offering.test1", &so),
-				// resource.TestCheckResourceAttr("cloudstack_service_offering.test1", "cpu_number", "2"),
-				// resource.TestCheckResourceAttr("cloudstack_service_offering.test1", "cpu_speed", "2200"),
-				// resource.TestCheckResourceAttr("cloudstack_service_offering.test1", "memory", "8096"),
+				Config: testAccServiceOfferingUnconstrained1,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.unconstrained1", "name", "unconstrained1"),
+				),
+			},
+			{
+				Config: testAccServiceOfferingUnconstrained2,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.unconstrained2", "name", "unconstrained2"),
+				),
+			},
+			{
+				Config: testAccServiceOfferingUnconstrained2_update,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.unconstrained2", "name", "unconstrained2update"),
+				),
+			},
+			{
+				Config: testAccServiceOfferingUnconstrained_disk,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.disk", "name", "disk"),
+				),
+			},
+			{
+				Config: testAccServiceOfferingUnconstrained_disk_hypervisor,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.disk_hypervisor", "name", "disk_hypervisor"),
+				),
+			},
+			{
+				Config: testAccServiceOfferingUnconstrained_disk_storage,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.disk_storage", "name", "disk_storage"),
 				),
 			},
 		},
 	})
 }
 
-const testAccCloudStackServiceOfferingUnconstrained_basic = `
-resource "cloudstack_service_offering_unconstrained" "test1" {
-	name 			= "service_offering_1"
-	display_text 	= "Test"
-	// deployment_planner = "FirstFitPlanner"
-	// network_rate = 0
+const testAccServiceOfferingUnconstrained1 = `
+resource "cloudstack_service_offering_unconstrained" "unconstrained1" {
+	display_text = "unconstrained1"
+	name         = "unconstrained1"
+
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = false
+	is_volatile             = false
+	limit_cpu_use           = false
+	offer_ha                = false
 }
 `
 
-// func testAccCheckCloudStackServiceOfferingExists(n string, so *cloudstack.ServiceOffering) resource.TestCheckFunc {
-// 	return func(s *terraform.State) error {
-// 		rs, ok := s.RootModule().Resources[n]
-// 		if !ok {
-// 			return fmt.Errorf("Not found: %s", n)
-// 		}
+const testAccServiceOfferingUnconstrained2 = `
+resource "cloudstack_service_offering_unconstrained" "unconstrained2" {
+	display_text = "unconstrained2"
+	name         = "unconstrained2"
 
-// 		if rs.Primary.ID == "" {
-// 			return fmt.Errorf("No service offering ID is set")
-// 		}
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
 
-// 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
-// 		resp, _, err := cs.ServiceOffering.GetServiceOfferingByID(rs.Primary.ID)
-// 		if err != nil {
-// 			return err
-// 		}
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+}
+`
 
-// 		if resp.Id != rs.Primary.ID {
-// 			return fmt.Errorf("Service offering not found")
-// 		}
+const testAccServiceOfferingUnconstrained2_update = `
+resource "cloudstack_service_offering_unconstrained" "unconstrained2" {
+	display_text = "unconstrained2update"
+	name         = "unconstrained2update"
 
-// 		*so = *resp
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
 
-// 		return nil
-// 	}
-// }
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+}
+`
+
+const testAccServiceOfferingUnconstrained_disk = `
+resource "cloudstack_service_offering_unconstrained" "disk" {
+	display_text = "disk"
+	name         = "disk"
+
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+
+	disk_offering = {
+		storage_type = "shared"
+		provisioning_type = "thin"
+		cache_mode = "none"
+		root_disk_size = "5"
+		tags = "FOO"
+		disk_offering_strictness = false
+	}
+}
+`
+
+const testAccServiceOfferingUnconstrained_disk_hypervisor = `
+resource "cloudstack_service_offering_unconstrained" "disk_hypervisor" {
+	display_text = "disk_hypervisor"
+	name         = "disk_hypervisor"
+
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+
+	disk_offering = {
+		storage_type = "shared"
+		provisioning_type = "thin"
+		cache_mode = "none"
+		root_disk_size = "5"
+		tags = "FOO"
+		disk_offering_strictness = false
+	}
+	disk_hypervisor = {
+		bytes_read_rate             = 1024
+		bytes_read_rate_max         = 1024
+		bytes_read_rate_max_length  = 1024
+		bytes_write_rate            = 1024
+		bytes_write_rate_max        = 1024
+		bytes_write_rate_max_length = 1024
+	}
+
+}
+`
+
+const testAccServiceOfferingUnconstrained_disk_storage = `
+resource "cloudstack_service_offering_unconstrained" "disk_storage" {
+	display_text = "disk_storage"
+	name         = "disk_storage"
+
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+
+	disk_offering = {
+		storage_type = "shared"
+		provisioning_type = "thin"
+		cache_mode = "none"
+		root_disk_size = "5"
+		tags = "FOO"
+		disk_offering_strictness = false
+	}
+	disk_storage = {
+		min_iops = 100
+		max_iops = 100
+	}
+}
+`

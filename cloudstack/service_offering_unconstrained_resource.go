@@ -7,10 +7,8 @@ import (
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var (
@@ -29,124 +27,141 @@ type serviceOfferingUnconstrainedResource struct {
 // Schema defines the schema for the resource.
 func (r *serviceOfferingUnconstrainedResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: map[string]schema.Attribute{
-			// "bytes_read_rate": schema.StringAttribute{
-			// 	Optional: true,
-			// },
-			"deployment_planner": schema.StringAttribute{
-				Optional: true,
-			},
-			"disk_offering_id": schema.StringAttribute{
-				Optional: true,
-			},
-			"display_text": schema.StringAttribute{
-				Required: true,
-			},
-			"domain_ids": schema.SetAttribute{
-				Optional:    true,
-				ElementType: types.StringType,
-			},
-			"dynamic_scaling_enabled": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-				Default: booldefault.StaticBool(false),
-			},
-			"host_tags": schema.StringAttribute{
-				Optional: true,
-			},
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"is_volatile": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-				Default: booldefault.StaticBool(false),
-			},
-			"limit_cpu_use": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-				Default: booldefault.StaticBool(false),
-			},
-			"name": schema.StringAttribute{
-				Required: true,
-			},
-			"network_rate": schema.Int64Attribute{
-				Optional: true,
-			},
-			"offer_ha": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-				Default: booldefault.StaticBool(false),
-			},
-			"storage_tags": schema.StringAttribute{
-				Optional: true,
-			},
-			"zone_ids": schema.SetAttribute{
-				Optional:    true,
-				ElementType: types.StringType,
-			},
-		},
+		Attributes: serviceOfferingMergeCommonSchema(map[string]schema.Attribute{}),
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
 func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
-	var plan serviceOfferingResourceModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	//
+	var plan serviceOfferingUnconstrainedResourceModel
+	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
+	var planDiskOffering ServiceOfferingDiskOffering
+	var planDiskQosStorage ServiceOfferingDiskQosStorage
+
+	//
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
+		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosHypervisor.As(ctx, &planDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
+	}
+	if !plan.ServiceOfferingDiskOffering.IsNull() {
+		resp.Diagnostics.Append(plan.ServiceOfferingDiskOffering.As(ctx, &planDiskOffering, basetypes.ObjectAsOptions{})...)
+	}
+	if !plan.ServiceOfferingDiskQosStorage.IsNull() {
+		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosStorage.As(ctx, &planDiskQosStorage, basetypes.ObjectAsOptions{})...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data, diags := createServiceOffering(ctx, r.client, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	// cloudstack params
+	params := r.client.ServiceOffering.NewCreateServiceOfferingParams(plan.DisplayText.ValueString(), plan.Name.ValueString())
+	plan.commonCreateParams(params)
+	planDiskQosHypervisor.commonCreateParams(params)
+	planDiskOffering.commonCreateParams(params)
+	planDiskQosStorage.commonCreateParams(params)
+
+	// create offering
+	cs, err := r.client.ServiceOffering.CreateServiceOffering(params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating unconstrained service offering",
+			"Could not create offering, unexpected error: "+err.Error(),
+		)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+	//
+	plan.Id = types.StringValue(cs.Id)
+
+	//
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 }
 
 func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state serviceOfferingResourceModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	//
+	var state serviceOfferingUnconstrainedResourceModel
+	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
+	var stateDiskOffering ServiceOfferingDiskOffering
+	var stateDiskQosStorage ServiceOfferingDiskQosStorage
+
+	//
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
+		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
+	}
+	if !state.ServiceOfferingDiskOffering.IsNull() {
+		resp.Diagnostics.Append(state.ServiceOfferingDiskOffering.As(ctx, &stateDiskOffering, basetypes.ObjectAsOptions{})...)
+	}
+	if !state.ServiceOfferingDiskQosStorage.IsNull() {
+		resp.Diagnostics.Append(state.ServiceOfferingDiskQosStorage.As(ctx, &stateDiskQosStorage, basetypes.ObjectAsOptions{})...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Get current state
-	data, diags := readServiceOffering(ctx, r.client, state)
-	resp.Diagnostics.Append(diags...)
+	//
+	cs, _, err := r.client.ServiceOffering.GetServiceOfferingByID(state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading Service Offering",
+			"Could not read Service Offering, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	//
+	state.commonRead(ctx, cs)
+	stateDiskQosHypervisor.commonRead(ctx, cs)
+	stateDiskOffering.commonRead(ctx, cs)
+	stateDiskQosStorage.commonRead(ctx, cs)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+	//
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
 func (r *serviceOfferingUnconstrainedResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	//
+	var state serviceOfferingUnconstrainedResourceModel
+
+	//
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	//
+	params := r.client.ServiceOffering.NewUpdateServiceOfferingParams(state.Id.ValueString())
+	state.commonUpdateParams(ctx, params)
+
+	//
+	cs, err := r.client.ServiceOffering.UpdateServiceOffering(params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating unconstrained service offering",
+			"Could not update unconstrained service offering, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	//
+	state.commonUpdate(ctx, cs)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
 func (r *serviceOfferingUnconstrainedResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state serviceOfferingResourceModel
+	//
+	var state serviceOfferingUnconstrainedResourceModel
+
+	//
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -154,7 +169,7 @@ func (r *serviceOfferingUnconstrainedResource) Delete(ctx context.Context, req r
 	}
 
 	// Delete the service offering
-	_, err := r.client.ServiceOffering.DeleteServiceOffering(r.client.ServiceOffering.NewDeleteServiceOfferingParams(state.ID.ValueString()))
+	_, err := r.client.ServiceOffering.DeleteServiceOffering(r.client.ServiceOffering.NewDeleteServiceOfferingParams(state.Id.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting HashiCups Order",
@@ -164,10 +179,7 @@ func (r *serviceOfferingUnconstrainedResource) Delete(ctx context.Context, req r
 	}
 }
 
-// Configure adds the provider configured client to the resource.
 func (r *serviceOfferingUnconstrainedResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	// Add a nil check when handling ProviderData because Terraform
-	// sets that data after it calls the ConfigureProvider RPC.
 	if req.ProviderData == nil {
 		return
 	}
@@ -186,7 +198,6 @@ func (r *serviceOfferingUnconstrainedResource) Configure(_ context.Context, req 
 	r.client = client
 }
 
-// Metadata returns the resource type name.
 func (r *serviceOfferingUnconstrainedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_service_offering_unconstrained"
 }
