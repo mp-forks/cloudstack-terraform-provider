@@ -48,7 +48,7 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 	if !plan.StorageTags.IsNull() {
 		p.SetStoragetags(plan.StorageTags.ValueString())
 	}
-	if !plan.ZoneIds.IsNull() {
+	if !plan.ZoneIds.IsNull() && len(plan.ZoneIds.Elements()) > 0 {
 		p.SetZoneid(plan.ZoneIds.String())
 	}
 

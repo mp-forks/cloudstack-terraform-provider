@@ -92,8 +92,8 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	cs, err := r.client.ServiceOffering.CreateServiceOffering(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating unconstrained service offering",
-			"Could not create offering, unexpected error: "+err.Error(),
+			"Error creating service offering",
+			"Could not create fixed offering, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -131,8 +131,8 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 	cs, _, err := r.client.ServiceOffering.GetServiceOfferingByID(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error reading Service Offering",
-			"Could not read Service Offering, unexpected error: "+err.Error(),
+			"Error reading service offering",
+			"Could not read fixed service offering, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -180,8 +180,8 @@ func (r *serviceOfferingFixedResource) Update(ctx context.Context, req resource.
 	cs, err := r.client.ServiceOffering.UpdateServiceOffering(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating unconstrained service offering",
-			"Could not update unconstrained service offering, unexpected error: "+err.Error(),
+			"Error updating fixed service offering",
+			"Could not update fixed service offering, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -210,8 +210,8 @@ func (r *serviceOfferingFixedResource) Delete(ctx context.Context, req resource.
 	_, err := r.client.ServiceOffering.DeleteServiceOffering(r.client.ServiceOffering.NewDeleteServiceOfferingParams(state.Id.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Deleting HashiCups Order",
-			"Could not delete order, unexpected error: "+err.Error(),
+			"Error deleting service offering",
+			"Could not delete fixed offering, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -229,7 +229,7 @@ func (r *serviceOfferingFixedResource) Configure(_ context.Context, req resource
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *hashicups.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *cloudstack.CloudStackClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
