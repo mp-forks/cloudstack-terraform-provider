@@ -94,11 +94,13 @@ func Provider() *schema.Provider {
 
 		ResourcesMap: map[string]*schema.Resource{
 			"cloudstack_affinity_group":                 resourceCloudStackAffinityGroup(),
+			"cloudstack_attach_volume":                  resourceCloudStackAttachVolume(),
 			"cloudstack_autoscale_vm_profile":           resourceCloudStackAutoScaleVMProfile(),
 			"cloudstack_cluster":                        resourceCloudStackCluster(),
 			"cloudstack_disk":                           resourceCloudStackDisk(),
 			"cloudstack_egress_firewall":                resourceCloudStackEgressFirewall(),
 			"cloudstack_firewall":                       resourceCloudStackFirewall(),
+			"cloudstack_host":                           resourceCloudStackHost(),
 			"cloudstack_instance":                       resourceCloudStackInstance(),
 			"cloudstack_ipaddress":                      resourceCloudStackIPAddress(),
 			"cloudstack_kubernetes_cluster":             resourceCloudStackKubernetesCluster(),
